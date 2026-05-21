@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  target-api:
+    build: ./target-api
+    container_name: livegrid-target
+    ports:
+      - "4000:4000"
+    networks:
+      - livegrid-net
+
+  server:
+    build: ./server
+    container_name: livegrid-server
+    ports:
+      - "3001:3001"
+    environment:
+      - TARGET_URL=http://target-api:4000
+    depends_on:
+      - target-api
+    networks:
+      - livegrid-net
+
+  dashboard:
+    build: ./dashboard
+    container_name: livegrid-dashboard
+    ports:
+      - "3000:80"
+    depends_on:
+      - server
+    networks:
+      - livegrid-net
+
+networks:
+  livegrid-net:
+    driver: bridge

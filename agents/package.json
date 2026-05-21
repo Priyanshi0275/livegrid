@@ -1,0 +1,8 @@
+{
+  "name": "livegrid-agent",
+  "version": "1.0.0",
+  "main": "agent.js",
+  "dependencies": {
+    "node-fetch": "^2.7.0"
+  }
+}
