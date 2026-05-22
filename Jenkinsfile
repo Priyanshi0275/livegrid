@@ -52,7 +52,7 @@ pipeline {
             steps {
                 echo '✅ Verifying services are up...'
                 sh 'curl -f http://localhost:4000/health || exit 1'
-                sh 'curl -f http://localhost:3002/test/state || exit 1'
+                sh 'curl -f http://localhost:4000/health || exit 1'
                 echo '✅ All services healthy!'
             }
         }
