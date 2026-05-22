@@ -8,10 +8,11 @@ LiveGrid is a full-stack distributed load testing tool that fires real HTTP requ
 
 ---
 
-## 🚀 Live Demo
+## 🚀 Run It Yourself
 
-**Dashboard:** `http://13.60.148.112:3000`  
-**Jenkins CI/CD:** `http://13.60.148.112:8080`
+Clone the repo and run locally with Docker — see [Run Locally](#-run-locally) section below.
+
+Or deploy on your own AWS EC2 free tier — see [Deploy on AWS](#-deploy-on-aws-ec2-free-tier) section below.
 
 ---
 
@@ -189,7 +190,3 @@ Open ports 3000, 3001, 3002, 4000, 8080 in your EC2 Security Group.
 **Priyanshi Mishra**  
 
 ---
-
-## 📝 License
-
-MIT
