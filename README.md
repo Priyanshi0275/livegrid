@@ -1,8 +1,122 @@
 # ⚡ LiveGrid — Distributed Load Testing Visualizer
 
-Watch your API break in real-time, before production does.
+> Watch your API break in real time, before production does.
 
-A full-stack load testing tool with a live dashboard, WebSocket-powered metrics, containerized agents, and Jenkins CI/CD — all runnable on a free AWS EC2 t2.micro.
+![Dashboard](screenshots/dash.png)
+
+LiveGrid is a full-stack distributed load testing tool that fires real HTTP requests at a target API using multiple concurrent agents, streams live metrics over WebSockets, and visualizes latency, throughput, and error rates on a real-time dashboard — all deployed on AWS EC2 with Docker and automated CI/CD via Jenkins.
+
+---
+
+## 🚀 Live Demo
+
+**Dashboard:** `http://13.60.148.112:3000`  
+**Jenkins CI/CD:** `http://13.60.148.112:8080`
+
+---
+
+## 🧠 What Makes This Different
+
+Most load testing tools (k6, JMeter) are CLI-only — you run a test and read a report after. LiveGrid lets you **watch it happen live** and **inject chaos mid-test**. You can crank up latency from 50ms to 300ms while the test is running and see all agents respond on the chart in real time.
+
+This isn't a tutorial project. It's a working system with:
+- Real WebSocket pub/sub architecture
+- Containerized agents that simulate distributed load
+- A chaos engineering control panel
+- A Jenkins pipeline that rebuilds and redeploys on every GitHub push
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, Vite, Recharts |
+| Real-time | WebSockets (`ws` library) |
+| Backend | Node.js, Express |
+| Load Agents | Node.js child processes |
+| Containers | Docker, Docker Compose |
+| CI/CD | Jenkins (Pipeline as Code) |
+| Cloud | AWS EC2 t3.micro |
+| Web Server | Nginx (serves React build) |
+
+---
+
+## 🏗 Architecture
+
+```
+Browser (React Dashboard)
+    ↕  WebSocket — live metric stream
+    ↕  REST API  — start / stop / chaos config
+
+Node.js Orchestrator (server)
+    └── spawns N agent processes
+            └── fires HTTP → Target API
+            └── stdout → JSON metrics → WS broadcast
+
+Target API (Express)
+    └── configurable latency, error rate, slow zone
+```
+
+Each agent is an isolated Node.js process. In a real AWS setup, these would be separate EC2 instances in an Auto Scaling Group — the architecture maps directly.
+
+---
+
+## 🎮 How to Use It
+
+### Step 1 — Open the dashboard
+Navigate to `http://13.60.148.112:3000`. You'll see the clean control panel with all stats at zero.
+
+![Clean Dashboard](screenshots/dash.png)
+
+---
+
+### Step 2 — Run a Ramp test
+Select **Ramp** profile, set 3 agents and 10 RPS, then click **Run Test**. Agents spin up one by one — watch the agent cards appear and the latency chart start drawing.
+
+![Agents Running](screenshots/ss2.png)
+
+---
+
+### Step 3 — Stable baseline
+After 30 seconds the system reaches a stable baseline. All 3 agents show ~65ms latency, 2% error rate matching the configured target. Three colored lines run flat across the chart.
+
+![Normal Latency](screenshots/ss3.png)
+
+---
+
+### Step 4 — Inject Chaos 🔥
+**This is the key demo moment.** Drag Base Latency to **300ms** → click **Apply Chaos**. All agents immediately respond — latency jumps from 65ms to 316ms on the live chart. The spike is instant and visible across all 3 agent lines simultaneously.
+
+![Chaos Applied](screenshots/ss4.png)
+
+---
+
+### Step 5 — Enable Slow Zone
+Tick **Slow Zone (5×)** → Apply Chaos again. The target API now runs at 5× base latency. Agents hit 1500ms+, error rates climb, and agent cards flip to warning colors. This simulates a degraded upstream dependency.
+
+![Slow Zone](screenshots/ss5.png)
+
+---
+
+### Step 6 — Jenkins CI/CD Pipeline
+Every `git push` triggers Jenkins to pull the latest code, rebuild all Docker images, run a smoke test against the target API, deploy all containers, and verify health checks. The entire pipeline runs automatically without manual intervention.
+
+![Jenkins Success](screenshots/jenkins.png)
+
+---
+
+## ⚙️ Jenkins Pipeline Stages
+
+```
+📥 Checkout       → pulls latest code from GitHub
+🔨 Build Images   → docker compose build --no-cache
+🧪 Smoke Test     → spins up target API, hits /health
+🚀 Deploy         → docker compose up -d (all 3 services)
+✅ Health Check   → verifies all endpoints respond
+```
+
+If any stage fails, Jenkins automatically rolls back by running `docker compose down`.
 
 ---
 
@@ -11,195 +125,71 @@ A full-stack load testing tool with a live dashboard, WebSocket-powered metrics,
 ```
 livegrid/
 ├── dashboard/          # React + Recharts frontend (Vite)
+│   ├── src/App.jsx     # Main dashboard component
+│   └── Dockerfile      # Node 20 builder → Nginx serve
 ├── server/             # Node.js WebSocket + REST orchestrator
-├── agents/             # Load agent script (runs per container)
+│   ├── index.js        # WS server + agent spawner + REST API
+│   └── agent.js        # Load agent (fires HTTP, streams metrics)
 ├── target-api/         # Express dummy API (the thing being tested)
-├── jenkins/            # Jenkinsfile reference copy
-├── docker-compose.yml          # Production (all services in Docker)
-├── docker-compose.dev.yml      # Dev (dashboard runs via Vite)
-├── Jenkinsfile                  # CI/CD pipeline
-└── setup-ec2.sh                # One-time EC2 setup script
+│   └── index.js        # Configurable latency, errors, slow zone
+├── docker-compose.yml  # Production deployment
+├── Jenkinsfile         # CI/CD pipeline definition
+└── setup-ec2.sh        # One-command EC2 bootstrap script
 ```
 
 ---
 
-## 🚀 Option A — Run Locally (Fastest, ~5 minutes)
-
-### Prerequisites
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
-- Git
-
-### Steps
+## 🖥 Run Locally
 
 ```bash
-# 1. Clone the repo
-git clone https://github.com/YOUR_USERNAME/livegrid.git
-cd livegrid
+# Prerequisites: Docker Desktop installed
 
-# 2. Start everything with Docker Compose
+git clone https://github.com/Priyanshi0275/livegrid.git
+cd livegrid
 docker compose up --build
 
-# 3. Open the dashboard
-open http://localhost:3000
+# Open http://localhost:3000
 ```
 
-That's it. All four services start together:
-| Service | URL |
-|---|---|
-| Dashboard | http://localhost:3000 |
-| WebSocket server | ws://localhost:3001 |
-| REST API | http://localhost:3002 |
-| Target API | http://localhost:4000 |
-
-### To stop
-```bash
-docker compose down
-```
+All 4 services start automatically. No other setup needed.
 
 ---
 
-## 💻 Option B — Local Dev Mode (Hot reload)
-
-Run the dashboard with Vite (instant hot reload) and the backend in Docker.
+## ☁️ Deploy on AWS EC2 (Free Tier)
 
 ```bash
-# Terminal 1 — start backend services
-docker compose -f docker-compose.dev.yml up --build
+# 1. Launch Ubuntu 22.04 t2.micro on AWS
+# 2. SSH in and run setup script
+bash <(curl -fsSL https://raw.githubusercontent.com/Priyanshi0275/livegrid/main/setup-ec2.sh)
 
-# Terminal 2 — start frontend with hot reload
-cd dashboard
-npm install
-npm run dev
-# open http://localhost:5173
-```
-
----
-
-## ☁️ Option C — Deploy on AWS EC2 (Free Tier)
-
-### Step 1 — Create EC2 instance
-1. Go to AWS Console → EC2 → Launch Instance
-2. Choose **Ubuntu 22.04 LTS** (free tier eligible)
-3. Instance type: **t2.micro** (free tier)
-4. Create a key pair, download the `.pem` file
-5. Security Group — open these inbound ports:
-   - 22 (SSH)
-   - 8080 (Jenkins)
-   - 3000 (Dashboard)
-   - 3001 (WebSocket)
-   - 3002 (REST API)
-   - 4000 (Target API)
-6. Launch the instance
-7. Allocate an **Elastic IP** and associate it (so the IP doesn't change on restart)
-
-### Step 2 — SSH into EC2 and setup
-```bash
-# SSH in
-chmod 400 your-key.pem
-ssh -i your-key.pem ubuntu@YOUR_EC2_PUBLIC_IP
-
-# Run the setup script (installs Docker, Jenkins, Git)
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/livegrid/main/setup-ec2.sh | bash
-
-# Log out and back in so docker group takes effect
-exit
-ssh -i your-key.pem ubuntu@YOUR_EC2_PUBLIC_IP
-```
-
-### Step 3 — Clone and run
-```bash
-git clone https://github.com/YOUR_USERNAME/livegrid.git
+# 3. Clone and run
+git clone https://github.com/Priyanshi0275/livegrid.git
 cd livegrid
-
-# Set your EC2 IP in dashboard env
-echo "VITE_WS_URL=ws://YOUR_EC2_IP:3001" > dashboard/.env
-echo "VITE_API_URL=http://YOUR_EC2_IP:3002" >> dashboard/.env
-
 docker compose up --build -d
 ```
 
-### Step 4 — Open dashboard
-```
-http://YOUR_EC2_IP:3000
-```
+Open ports 3000, 3001, 3002, 4000, 8080 in your EC2 Security Group.
 
 ---
 
-## 🔧 Set Up Jenkins CI/CD
+## 📊 What the Metrics Mean
 
-1. Open `http://YOUR_EC2_IP:8080`
-2. Get initial password: `sudo cat /var/lib/jenkins/secrets/initialAdminPassword`
-3. Install suggested plugins
-4. Create admin user
-5. New Item → Pipeline → name it `livegrid`
-6. Under Pipeline: select **Pipeline script from SCM**
-7. SCM: Git → your repo URL
-8. Script path: `Jenkinsfile`
-9. Save → Build Now
-
-From now on, every push to your GitHub repo can trigger Jenkins to rebuild and redeploy automatically (add a GitHub webhook pointing to `http://YOUR_EC2_IP:8080/github-webhook/`).
-
----
-
-## 🎮 Using the Dashboard
-
-1. **Choose a profile**
-   - `ramp` — agents spin up one by one (great for showing auto-scale visually)
-   - `spike` — all agents start simultaneously
-   - `soak` — single agent, sustained load
-
-2. **Set agent count** (1–6) and **RPS** per agent
-
-3. **Click Run Test** — watch the latency heatmap light up per agent
-
-4. **Apply Chaos** — mid-test, crank up base latency, error rate, or enable Slow Zone to see the dashboard react in real time
-
-5. **Stop Test** — kills all agent containers
-
----
-
-## 🏗 Architecture (what's actually happening)
-
-```
-Browser (React dashboard)
-    ↕ WebSocket (ws://server:3001)   ← live metric stream
-    ↕ REST (http://server:3002)      ← start/stop/config
-
-Node.js Orchestrator (server)
-    ↳ spawn("node agent.js") × N     ← one process per agent
-         ↳ fires HTTP → target-api:4000
-         ↳ stdout → JSON metrics → WebSocket broadcast
-
-Target API (Express)
-    ← configurable latency, errors, slow zone
-```
-
-On EC2, each "agent" is a Node.js child process. In a real AWS setup, these would be separate EC2 instances in an Auto Scaling Group — the architecture is identical, just the process boundary changes.
-
----
-
-## 🧪 Tech Stack
-
-| Layer | Tech |
+| Metric | Description |
 |---|---|
-| Frontend | React 18, Vite, Recharts |
-| WebSocket server | Node.js, `ws` |
-| Load agents | Node.js, `node-fetch` |
-| Target API | Express |
-| Containers | Docker, Docker Compose |
-| CI/CD | Jenkins (Pipeline) |
-| Hosting | AWS EC2 t2.micro (free tier) |
+| Avg Latency | Rolling average response time across last 50 requests per agent |
+| Total Requests | Cumulative requests fired since test start |
+| Error Rate | % of non-2xx responses in the sliding window |
+| Active Agents | Number of agent processes currently running |
+| Throughput | Requests in the current sliding window per agent |
 
 ---
 
-## 💡 Interview Talking Points
+## 👩‍💻 Author
 
-- "Each agent is isolated in its own process — in production this maps to separate EC2 instances in an Auto Scaling Group"
-- "Metrics flow through a WebSocket pub/sub pattern — the server is the broker, agents are producers, the dashboard is the consumer"
-- "The Jenkins pipeline rebuilds Docker images, runs a smoke test against the target API, and only deploys if health checks pass"
-- "The chaos controls let you inject latency and errors mid-test — similar to Netflix Chaos Monkey but scoped to a single endpoint"
+**Priyanshi Mishra**  
 
 ---
 
 ## 📝 License
+
 MIT
