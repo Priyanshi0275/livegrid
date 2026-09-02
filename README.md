@@ -1,4 +1,4 @@
-# ⚡ LiveGrid — Distributed Load Testing Visualizer
+#  LiveGrid — Distributed Load Testing Visualizer
 
 > Watch your API break in real time, before production does.
 
@@ -8,7 +8,7 @@ LiveGrid is a full-stack distributed load testing tool that fires real HTTP requ
 
 ---
 
-## 🚀 Run It Yourself
+##  Run It Yourself
 
 Clone the repo and run locally with Docker — see [Run Locally](#-run-locally) section below.
 
@@ -16,7 +16,7 @@ Or deploy on your own AWS EC2 free tier — see [Deploy on AWS](#-deploy-on-aws-
 
 ---
 
-## 🧠 What Makes This Different
+##  What Makes This Different
 
 Most load testing tools (k6, JMeter) are CLI-only — you run a test and read a report after. LiveGrid lets you **watch it happen live** and **inject chaos mid-test**. You can crank up latency from 50ms to 300ms while the test is running and see all agents respond on the chart in real time.
 
@@ -28,7 +28,7 @@ This isn't a tutorial project. It's a working system with:
 
 ---
 
-## 🛠 Tech Stack
+##  Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -43,7 +43,7 @@ This isn't a tutorial project. It's a working system with:
 
 ---
 
-## 🏗 Architecture
+##  Architecture
 
 ```
 Browser (React Dashboard)
@@ -63,7 +63,7 @@ Each agent is an isolated Node.js process. In a real AWS setup, these would be s
 
 ---
 
-## 🎮 How to Use It
+##  How to Use It
 
 ### Step 1 — Open the dashboard
 Navigate to `http://13.60.148.112:3000`. You'll see the clean control panel with all stats at zero.
@@ -86,7 +86,7 @@ After 30 seconds the system reaches a stable baseline. All 3 agents show ~65ms l
 
 ---
 
-### Step 4 — Inject Chaos 🔥
+### Step 4 — Inject Chaos 
 **This is the key demo moment.** Drag Base Latency to **300ms** → click **Apply Chaos**. All agents immediately respond — latency jumps from 65ms to 316ms on the live chart. The spike is instant and visible across all 3 agent lines simultaneously.
 
 ![Chaos Applied](screenshots/ss4.png)
@@ -110,18 +110,18 @@ Every `git push` triggers Jenkins to pull the latest code, rebuild all Docker im
 ## ⚙️ Jenkins Pipeline Stages
 
 ```
-📥 Checkout       → pulls latest code from GitHub
-🔨 Build Images   → docker compose build --no-cache
-🧪 Smoke Test     → spins up target API, hits /health
-🚀 Deploy         → docker compose up -d (all 3 services)
-✅ Health Check   → verifies all endpoints respond
+ Checkout       → pulls latest code from GitHub
+ Build Images   → docker compose build --no-cache
+ Smoke Test     → spins up target API, hits /health
+ Deploy         → docker compose up -d (all 3 services)
+ Health Check   → verifies all endpoints respond
 ```
 
 If any stage fails, Jenkins automatically rolls back by running `docker compose down`.
 
 ---
 
-## 🗂 Project Structure
+##  Project Structure
 
 ```
 livegrid/
@@ -140,7 +140,7 @@ livegrid/
 
 ---
 
-## 🖥 Run Locally
+##  Run Locally
 
 ```bash
 # Prerequisites: Docker Desktop installed
@@ -156,7 +156,7 @@ All 4 services start automatically. No other setup needed.
 
 ---
 
-## ☁️ Deploy on AWS EC2 (Free Tier)
+##  Deploy on AWS EC2 (Free Tier)
 
 ```bash
 # 1. Launch Ubuntu 22.04 t2.micro on AWS
@@ -173,7 +173,7 @@ Open ports 3000, 3001, 3002, 4000, 8080 in your EC2 Security Group.
 
 ---
 
-## 📊 What the Metrics Mean
+##  What the Metrics Mean
 
 | Metric | Description |
 |---|---|
